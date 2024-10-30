@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, flash, jsonify
 import folium
 import logging
+import asyncio
 from logging.config import dictConfig
 
 from config.settings import LOGGING

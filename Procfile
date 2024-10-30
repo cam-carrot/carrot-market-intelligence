@@ -1,1 +1,1 @@
-web: gunicorn app:app
+web: gunicorn app:app --worker-class aiohttp.worker.GunicornWebWorker --workers=2 --threads=4 --worker-connections=1000 --max-requests=1000 --max-requests-jitter=50 --timeout=30 --preload
