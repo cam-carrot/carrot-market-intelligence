@@ -4,6 +4,7 @@ import logging
 import asyncio
 from logging.config import dictConfig
 import os
+import sys
 
 from config.settings import LOGGING
 from config.constants import MARKET_TAGS
@@ -21,6 +22,10 @@ app.config['DEBUG'] = True
 
 engine = MarketAnalysisEngine()
 search_engine = SearchEngine()
+
+# Increase recursion limit for Heroku
+if 'DYNO' in os.environ:
+    sys.setrecursionlimit(3000)
 
 # Custom filter for number formatting
 @app.template_filter('format_number')
@@ -108,7 +113,7 @@ async def analyze():
                            seo_metrics=seo_metrics)  # Verify this is being passed
     except Exception as e:
         app.logger.error(f"Error in analyze route: {str(e)}")
-        return render_template('error.html', error=str(e))
+        return render_template('404.html', error=str(e))
 
 @app.route('/results', methods=['GET'])
 async def results():
