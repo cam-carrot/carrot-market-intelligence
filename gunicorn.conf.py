@@ -1,12 +1,13 @@
 import multiprocessing
+import os
 
 # Server socket
-bind = "0.0.0.0:$PORT"
+bind = f"0.0.0.0:{os.environ.get('PORT', '5000')}"  # Use environment PORT or default to 5000
 backlog = 2048
 
 # Worker processes
 workers = 2
-worker_class = "aiohttp.worker.GunicornWebWorker"
+worker_class = "gevent"  # Changed from aiohttp to gevent
 threads = 4
 worker_connections = 1000
 timeout = 30

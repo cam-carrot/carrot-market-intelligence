@@ -19,3 +19,4 @@ setuptools==57.5.0
 httpx==0.24.1
 tldextract==3.4.4
 aiohttp==3.8.5
+gevent==22.10.2
