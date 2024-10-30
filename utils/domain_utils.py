@@ -1,7 +1,6 @@
 from typing import List
 from urllib.parse import urlparse
-import tld
-from tld.utils import update_tld_names
+import tldextract
 import logging
 from config import IBUYERS
 
@@ -10,26 +9,25 @@ logger = logging.getLogger(__name__)
 def extract_base_domain(url: str) -> str:
     """Extract base domain from URL."""
     try:
-        # Update the TLD database
-        update_tld_names()
+        # Use tldextract which is more reliable than tld
+        extracted = tldextract.extract(url)
         
-        # Parse the URL
-        parsed = urlparse(url)
-        if not parsed.netloc:
-            return None
+        # Combine domain and suffix (e.g., example.com)
+        if extracted.domain and extracted.suffix:
+            return f"{extracted.domain}.{extracted.suffix}"
             
-        # Extract the domain using tld
-        res = tld.get_tld(url, as_object=True, fail_silently=True)
-        if not res:
-            return parsed.netloc
+        # Fallback to netloc if tldextract fails
+        if not extracted.domain:
+            parsed = urlparse(url)
+            return parsed.netloc.replace('www.', '')
             
-        return res.fld
+        return None
     except Exception as e:
-        # Log the error but return a fallback
+        # Log the error but don't crash
         logger.error(f"Error extracting domain from {url}: {str(e)}")
         try:
-            # Fallback to simple domain extraction
-            return urlparse(url).netloc.split(':')[0]
+            # Last resort fallback
+            return urlparse(url).netloc.replace('www.', '')
         except:
             return None
 

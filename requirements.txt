@@ -20,4 +20,4 @@ httpx==0.24.1
 tldextract==3.4.4
 aiohttp==3.8.5
 gevent==22.10.2
-tld==0.13.0
+tldextract==3.4.4
