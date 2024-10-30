@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Analysis Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/chart_utils.js') }}"></script>
+    <style>
+        .gauge-chart {
+            width: 120px;
+            height: 120px;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-800">
+    <div class="container mx-auto px-4 py-12">
+        <h1 class="text-4xl font-extrabold mb-12 text-center text-indigo-600">Market Analysis Results</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div class="bg-white shadow-lg rounded-xl p-8 transition duration-300 ease-in-out hover:shadow-xl">
+                <h2 class="text-2xl font-bold mb-6 text-indigo-800">Target Market: {{ target_city }}, {{ target_state }}</h2>
+                {% if target_data is not none %}
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="flex flex-col items-center">
+                        <p class="font-semibold text-lg mb-2">Opportunity Score:</p>
+                        <div class="star-rating" data-rating="{{ target_data.opportunity_score * 5 }}"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <p><span class="font-semibold">Population:</span> {{ "{:,}".format(target_data.population_proper|int) }}</p>
+                        <p><span class="font-semibold">Housing Units:</span> {{ "{:,}".format(target_data.housing_units|int) }}</p>
+                        <p><span class="font-semibold">Home Value:</span> ${{ "{:,}".format(target_data.home_value|int) }}</p>
+                        <p><span class="font-semibold">Opportunity Category:</span> 
+                            <span class="px-2 py-1 rounded-full text-sm 
+                                {% if target_data.opportunity_category == 'High' %}
+                                    bg-green-200 text-green-800
+                                {% elif target_data.opportunity_category == 'Average' %}
+                                    bg-yellow-200 text-yellow-800
+                                {% else %}
+                                    bg-red-200 text-red-800
+                                {% endif %}
+                            ">
+                                {{ target_data.opportunity_category }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-gray-600 italic">No specific data available for the target market.</p>
+                {% endif %}
+            </div>
+            <div class="bg-white shadow-lg rounded-xl p-8 transition duration-300 ease-in-out hover:shadow-xl">
+                <h2 class="text-2xl font-bold mb-6 text-indigo-800">Market Map</h2>
+                {{ map_html|safe }}
+            </div>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-xl p-8 mb-12 transition duration-300 ease-in-out hover:shadow-xl">
+            <h2 class="text-2xl font-bold mb-6 text-indigo-800">Similar Markets</h2>
+            
+            {% for category in ['High', 'Average'] %}
+            <div class="mb-8">
+                <h3 class="text-xl font-bold mb-4 {% if category == 'High' %}text-green-600{% else %}text-orange-600{% endif %}">{{ category }} Opportunity Markets</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for city in similar_cities if city.opportunity_category == category %}
+                    <div class="{% if category == 'High' %}bg-green-50{% else %}bg-orange-50{% endif %} rounded-lg p-6 shadow-md hover:shadow-lg transition duration-300">
+                        <h4 class="font-bold text-lg mb-3 {% if category == 'High' %}text-green-800{% else %}text-orange-800{% endif %}">{{ city.city }}, {{ city.state_id }}</h4>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <p><span class="font-semibold">Population:</span> {{ "{:,}".format(city.population_proper|int) }}</p>
+                                <p><span class="font-semibold">Housing Units:</span> {{ "{:,}".format(city.housing_units|int) }}</p>
+                                <p><span class="font-semibold">Home Value:</span> ${{ "{:,}".format(city.home_value|int) }}</p>
+                            </div>
+                            <div>
+                                <p><span class="font-semibold">Organic CVR:</span> {{ "%.2f%%" | format(city.cvr_org * 100) if city.cvr_org is not none and city.cvr_org > 0 else 'N/A' }}</p>
+                                <p><span class="font-semibold">Organic Leads:</span> {{ "{:,}".format(city.leads_org|int) if city.leads_org is not none and city.leads_org > 0 else 'N/A' }}</p>
+                                <p><span class="font-semibold">Paid CVR:</span> {{ "%.2f%%" | format(city.cvr_paid * 100) if city.cvr_paid is not none and city.cvr_paid > 0 else 'N/A' }}</p>
+                                <p><span class="font-semibold">Paid Leads:</span> {{ "{:,}".format(city.leads_paid|int) if city.leads_paid is not none and city.leads_paid > 0 else 'N/A' }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <p><span class="font-semibold">Distance:</span> {{ "%.1f" | format(city.distance_to_target) }} miles</p>
+                            <p><span class="font-semibold">Opportunity Score:</span></p>
+                            <div class="star-rating" data-rating="{{ city.opportunity_score * 5 }}"></div>
+                        </div>
+                        <!-- Add tags section -->
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            {% for tag in city.tags %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ market_tags[tag].color }} bg-opacity-10">
+                                {{ market_tags[tag].icon }} {{ market_tags[tag].name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Add this section before Market Search Analysis -->
+        <div class="bg-white shadow-lg rounded-xl p-8 mb-12 transition duration-300 ease-in-out hover:shadow-xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-indigo-800">Opportunity Score Components</h2>
+                <button id="showComponents" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 transition duration-300">
+                    Show Score Components
+                </button>
+            </div>
+
+            <div id="scoreComponents" class="hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weighted Score</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for component in target_data.score_components %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ component.name }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ component.value }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ "%.2f"|format(component.score) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ "%.2f"|format(component.weight) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ "%.2f"|format(component.weighted_score) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    Total Score
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    -
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    -
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    -
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
+                                    {{ "%.2f"|format(target_data.opportunity_score) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-lg rounded-xl p-8 mb-12 transition duration-300 ease-in-out hover:shadow-xl">
+            <h2 class="text-2xl font-bold mb-6 text-indigo-800">Market Search Analysis</h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-indigo-50 rounded-lg p-6">
+                    <h3 class="text-xl font-bold mb-4 text-indigo-700">Market Overview</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p><span class="font-semibold">Total Unique Domains:</span> {{ market_analysis.summary.total_domains }}</p>
+                            <p><span class="font-semibold">iBuyer Ratio:</span> {{ "%.1f%%"|format(market_analysis.summary.ibuyer_ratio * 100) }}</p>
+                            <p><span class="font-semibold">Avg Authority Score:</span> {{ "%.1f"|format(market_analysis.summary.avg_authority_score) }}</p>
+                        </div>
+                        <div>
+                            <p><span class="font-semibold">Avg Backlinks:</span> {{ "{:,}".format(market_analysis.summary.avg_backlinks|int) }}</p>
+                            <p><span class="font-semibold">iBuyers Found:</span> {{ market_analysis.summary.ibuyer_count }}</p>
+                            <p><span class="font-semibold">Investors Found:</span> {{ market_analysis.summary.investor_count }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 rounded-lg p-6">
+                    <h3 class="text-xl font-bold mb-4 text-indigo-700">Top Performing Domains</h3>
+                    <div class="divide-y divide-indigo-200">
+                        {% for domain, stats in market_analysis.summary.top_performers %}
+                        <div class="py-3 {% if loop.first %}pt-0{% endif %} {% if loop.last %}pb-0{% endif %}">
+                            <div class="flex justify-between items-center">
+                                <div class="flex-1">
+                                    {{ domain }}
+                                    {% if stats.is_ibuyer %}
+                                    <span class="px-2 py-1 ml-2 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">iBuyer</span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex gap-4 text-sm">
+                                    <span class="text-indigo-600">Rank: {{ stats.best_rank }}</span>
+                                    <span class="text-green-600">Auth: {{ "%.1f"|format(stats.authority_score) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Rankings Section -->
+            <div class="mb-8">
+                <div class="bg-white rounded-lg p-6 shadow-md">
+                    <h3 class="text-xl font-bold mb-4 text-indigo-700">Search Rankings by Term</h3>
+                    {% for term in market_analysis.search_results.keys() %}
+                    <div class="mb-6 {% if not loop.last %}border-b border-gray-200 pb-6{% endif %}">
+                        <h4 class="text-lg font-semibold mb-3 text-indigo-600">{{ term|title }}</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr class="text-left">
+                                        <th class="px-4 py-2 text-sm font-medium text-gray-500">Rank</th>
+                                        <th class="px-4 py-2 text-sm font-medium text-gray-500">Domain</th>
+                                        <th class="px-4 py-2 text-sm font-medium text-gray-500">Authority</th>
+                                        <th class="px-4 py-2 text-sm font-medium text-gray-500">Backlinks</th>
+                                        <th class="px-4 py-2 text-sm font-medium text-gray-500">Ref Domains</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in market_analysis.search_results[term] %}
+                                    <tr class="{% if loop.index % 2 == 0 %}bg-gray-50{% endif %}">
+                                        <td class="px-4 py-2 text-sm">{{ result.rank }}</td>
+                                        <td class="px-4 py-2 text-sm">
+                                            {{ result.domain }}
+                                            {% if result.domain in market_analysis.ibuyer_metrics.domains %}
+                                            <span class="px-2 py-0.5 ml-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">iBuyer</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-4 py-2 text-sm">{{ "%.1f"|format(market_analysis.seo_metrics[result.domain].authority_score) if result.domain in market_analysis.seo_metrics else 'N/A' }}</td>
+                                        <td class="px-4 py-2 text-sm">{{ "{:,}".format(market_analysis.seo_metrics[result.domain].backlink_count|int) if result.domain in market_analysis.seo_metrics else 'N/A' }}</td>
+                                        <td class="px-4 py-2 text-sm">{{ "{:,}".format(market_analysis.seo_metrics[result.domain].referring_domains|int) if result.domain in market_analysis.seo_metrics else 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Domain Performance and Market Competitiveness -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-lg p-6 shadow-md">
+                    <h3 class="text-xl font-bold mb-4 text-indigo-700">Domain Performance Analysis</h3>
+                    <div class="space-y-4">
+                        {% for domain, perf in (market_analysis.domain_performance.items()|sort(attribute='1.visibility_score', reverse=True))[:10] %}
+                        <div class="border-b border-gray-200 pb-4 {% if loop.last %}border-b-0 pb-0{% endif %}">
+                            <div class="flex justify-between items-center">
+                                <div class="flex-1">
+                                    {{ domain }}
+                                    {% if domain in market_analysis.ibuyer_metrics.domains %}
+                                    <span class="px-2 py-1 ml-2 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">iBuyer</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    Score: {{ "%.2f"|format(perf.visibility_score) }}
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
+                                <span class="font-medium">Term Coverage: {{ "%.0f%%"|format(perf.term_coverage * 100) }}</span>
+                                <span class="font-medium">Avg Position: {{ "%.1f"|format(perf.average_position) }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6 shadow-md">
+                    <h3 class="text-xl font-bold mb-4 text-indigo-700">Market SEO Snapshot</h3>
+                    <div style="height: 400px">
+                        <canvas id="seoSnapshotChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if seo_metrics %}
+            <div class="bg-white shadow-lg rounded-xl p-8 mb-12 transition duration-300 ease-in-out hover:shadow-xl">
+                <h2 class="text-2xl font-bold mb-6 text-indigo-800">Search Engine Metrics</h2>
+                <!-- Debug output -->
+                <div class="text-sm text-gray-600 mb-4">
+                    <p>Number of domains with metrics: {{ seo_metrics|length }}</p>
+                    <p>Domains: {{ seo_metrics.keys()|list }}</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for domain, metrics in seo_metrics.items() %}
+                    <div class="bg-blue-50 rounded-lg p-6 shadow-md hover:shadow-lg transition duration-300">
+                        <h4 class="font-bold text-lg mb-3 text-blue-800">{{ domain }}</h4>
+                        <div class="space-y-2">
+                            <p><span class="font-semibold">Authority Score:</span> {{ metrics.authority_score if metrics.authority_score is not none else 'N/A' }}</p>
+                            <p><span class="font-semibold">Backlinks:</span> {{ metrics.backlink_count if metrics.backlink_count is not none else 'N/A' }}</p>
+                            <p><span class="font-semibold">Referring Domains:</span> {{ metrics.referring_domains if metrics.referring_domains is not none else 'N/A' }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Debug output when no metrics -->
+            <div class="bg-yellow-50 p-4 rounded-lg mb-12">
+                <p class="text-yellow-700">No SEO metrics available (seo_metrics is {{ 'empty' if seo_metrics == {} else 'None' }})</p>
+            </div>
+        {% endif %}
+
+        <div class="mt-12 text-center">
+            <a href="{{ url_for('index') }}" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">
+                Analyze Another Market
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <script>
+        document.getElementById('showComponents').addEventListener('click', function() {
+            var componentsTable = document.getElementById('scoreComponents');
+            if (componentsTable.classList.contains('hidden')) {
+                componentsTable.classList.remove('hidden');
+                this.textContent = 'Hide Score Components';
+            } else {
+                componentsTable.classList.add('hidden');
+                this.textContent = 'Show Score Components';
+            }
+        });
+
+        function createStarRating(element) {
+            const rating = parseFloat(element.dataset.rating);
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5;
+            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+            for (let i = 0; i < fullStars; i++) {
+                element.innerHTML += '<i class="fas fa-star text-yellow-400"></i>';
+            }
+            if (halfStar) {
+                element.innerHTML += '<i class="fas fa-star-half-alt text-yellow-400"></i>';
+            }
+            for (let i = 0; i < emptyStars; i++) {
+                element.innerHTML += '<i class="far fa-star text-yellow-400"></i>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.star-rating').forEach(createStarRating);
+            const marketAnalysis = {{ market_analysis|tojson|safe }};
+            createSEOSnapshotChart(marketAnalysis);
+        });
+    </script>
+</body>
+</html>

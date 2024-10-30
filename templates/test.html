@@ -1,0 +1,96 @@
+```html
+{# Add this section just before the "Analyze Another Market" button #}
+
+:::::::::::: {.bg-white .shadow-lg .rounded-xl .p-8 .mb-12 .transition .duration-300 .ease-in-out .hover:shadow-xl}
+## Search Rankings & SEO Analysis {#search-analysis .text-2xl .font-bold .mb-6 .text-indigo-800}
+
+::::::::::: {.grid .grid-cols-1 .lg:grid-cols-2 .gap-8 .mb-8}
+:::::::::: {.bg-indigo-50 .rounded-lg .p-6}
+### Market Overview {.text-xl .font-bold .mb-4 .text-indigo-700}
+
+::::::::: {.grid .grid-cols-2 .gap-4}
+:::::::: {.text-sm}
+[Total Unique Domains:]{.font-semibold} {{ market_analysis.unique_domains }}
+
+[iBuyer Ratio:]{.font-semibold} {{ "%.1f%%"|format(market_analysis.ibuyer_ratio * 100) }}
+
+[Avg Authority Score:]{.font-semibold} {{ "%.1f"|format(market_analysis.summary.avg_authority_score) }}
+::::::::
+
+:::::::: {.text-sm}
+[Avg Backlinks:]{.font-semibold} {{ "{:,}".format(market_analysis.summary.avg_backlinks|int) }}
+
+[Domain Types:]{.font-semibold}
+- iBuyers: {{ market_analysis.summary.ibuyer_count }}
+- Investors: {{ market_analysis.summary.investor_count }}
+::::::::
+:::::::::
+::::::::::
+
+:::::::::: {.bg-indigo-50 .rounded-lg .p-6}
+### Top Performing Domains {.text-xl .font-bold .mb-4 .text-indigo-700}
+
+::::::::: {.space-y-3}
+{% for domain in market_analysis.top_domains[:5] %}
+:::::::: {.flex .justify-between .items-center .bg-white .p-3 .rounded-lg .shadow-sm}
+::::::: {.flex-1}
+{{ domain }}
+:::::::
+
+::::::: {.flex .gap-4 .text-sm}
+[Rank: {{ domain_rankings[domain].best_rank }}]{.text-indigo-600}
+[Auth: {{ "%.1f"|format(seo_metrics[domain].authority_score) }}]{.text-green-600}
+:::::::
+::::::::
+{% endfor %}
+:::::::::
+::::::::::
+:::::::::::
+
+::::::::::: {.grid .grid-cols-1 .gap-8 .mb-8}
+:::::::::: {.bg-white .rounded-lg .p-6 .shadow-md}
+### Search Term Rankings {.text-xl .font-bold .mb-4 .text-indigo-700}
+
+{% for term in ['we buy houses', 'sell my house fast', 'sell my house fast for cash'] %}
+::::::::: {.mb-6}
+#### {{ term|title }} {.text-lg .font-semibold .mb-3 .text-indigo-600}
+
+:::::::: {.overflow-x-auto}
+::::::: {.min-w-full .divide-y .divide-gray-200}
+:::::: {.bg-gray-50}
+::::: {.grid .grid-cols-4 .gap-4 .px-4 .py-2 .text-sm .font-medium .text-gray-500}
+Rank
+Domain
+Authority Score
+Backlinks
+:::::
+::::::
+
+{% for result in search_results[term][:10] %}
+:::::: {.grid .grid-cols-4 .gap-4 .px-4 .py-2 .text-sm {% if loop.index % 2 == 0 %}bg-gray-50{% endif %}}
+{{ result.rank }}
+
+{{ result.domain }}
+
+{{ "%.1f"|format(seo_metrics[result.domain].authority_score) if result.domain in seo_metrics else 'N/A' }}
+
+{{ "{:,}".format(seo_metrics[result.domain].backlink_count|int) if result.domain in seo_metrics else 'N/A' }}
+::::::
+{% endfor %}
+:::::::
+::::::::
+:::::::::
+{% endfor %}
+::::::::::
+:::::::::::
+
+::::::::::: {.grid .grid-cols-1 .gap-8}
+:::::::::: {.bg-white .rounded-lg .p-6 .shadow-md}
+### Domain Authority Distribution {.text-xl .font-bold .mb-4 .text-indigo-700}
+
+{# Add your chart here #}
+<div id="authorityChart" class="h-64"></div>
+::::::::::
+:::::::::::
+::::::::::::
+```
