@@ -9,25 +9,35 @@ logger = logging.getLogger(__name__)
 def extract_base_domain(url: str) -> str:
     """Extract base domain from URL."""
     try:
-        # Use tldextract which is more reliable than tld
-        extracted = tldextract.extract(url)
+        # Force tldextract to not use cache in Heroku environment
+        if 'DYNO' in os.environ:
+            extracted = tldextract.extract(url, cache_dir=False)
+        else:
+            extracted = tldextract.extract(url)
         
         # Combine domain and suffix (e.g., example.com)
         if extracted.domain and extracted.suffix:
             return f"{extracted.domain}.{extracted.suffix}"
+        
+        # Fallback to simple parsing if tldextract fails
+        parsed = urlparse(url)
+        domain = parsed.netloc or parsed.path
+        
+        # Remove www. and any ports
+        domain = domain.replace('www.', '').split(':')[0]
+        
+        # Remove any paths if they got included
+        domain = domain.split('/')[0]
+        
+        return domain if domain else None
             
-        # Fallback to netloc if tldextract fails
-        if not extracted.domain:
-            parsed = urlparse(url)
-            return parsed.netloc.replace('www.', '')
-            
-        return None
     except Exception as e:
         # Log the error but don't crash
         logger.error(f"Error extracting domain from {url}: {str(e)}")
         try:
-            # Last resort fallback
-            return urlparse(url).netloc.replace('www.', '')
+            # Last resort fallback using basic parsing
+            parsed = urlparse(url if '://' in url else f'http://{url}')
+            return parsed.netloc.replace('www.', '').split(':')[0]
         except:
             return None
 
