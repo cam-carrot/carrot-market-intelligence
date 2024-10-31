@@ -39,6 +39,6 @@ IBUYERS = [
     'homelight.com',
     'knock.com',
     'orchard.com',
-    'webuyuglyhouses.com'
+    'webuyuglyhouses.com',
     'houzeo.com'
 ]
